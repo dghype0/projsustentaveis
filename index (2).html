@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EcoChat - Assistente de Projetos Sustentáveis</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #e8f5e9;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+        .chat-container {
+            width: 90%;
+            max-width: 600px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        .chat-header {
+            background-color: #4CAF50;
+            color: white;
+            padding: 20px;
+            text-align: center;
+            font-size: 24px;
+        }
+        .chat-messages {
+            height: 400px;
+            overflow-y: auto;
+            padding: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 20px;
+            max-width: 80%;
+        }
+        .user-message {
+            background-color: #e3f2fd;
+            margin-left: auto;
+        }
+        .assistant-message {
+            background-color: #f1f8e9;
+        }
+        .input-area {
+            display: flex;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        #user-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            font-size: 16px;
+        }
+        #send-button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin-left: 10px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        #send-button:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            EcoChat - Assistente de Projetos Sustentáveis
+        </div>
+        <div class="chat-messages" id="chat-messages"></div>
+        <div class="input-area">
+            <input type="text" id="user-input" placeholder="Digite sua mensagem aqui...">
+            <button id="send-button">Enviar</button>
+        </div>
+    </div>
+
+    <script>
+        const chatMessages = document.getElementById('chat-messages');
+        const userInput = document.getElementById('user-input');
+        const sendButton = document.getElementById('send-button');
+
+        const apiKey = '3e28881304e24fb4a7bcbbc10617572e';
+        const apiUrl = 'https://vinic-m20yg707-uksouth.openai.azure.com/openai/deployments/gpt-35-turboAlexGracio10Out/chat/completions?api-version=2023-03-15-preview';
+
+        const systemPrompt = "Você é um assistente especializado em projetos sustentáveis. Comece com uma saudação amigável e pergunte sobre o interesse do usuário em sustentabilidade. Ofereça ideias criativas e práticas para projetos sustentáveis, adaptando suas sugestões ao contexto e interesses do usuário. Seja entusiasta, informativo e encoraje a ação em prol do meio ambiente.";
+
+        let conversationHistory = [
+            { role: 'system', content: systemPrompt }
+        ];
+
+        function addMessageToChat(role, content) {
+            const messageElement = document.createElement('div');
+            messageElement.classList.add('message', role === 'user' ? 'user-message' : 'assistant-message');
+            messageElement.textContent = content;
+            chatMessages.appendChild(messageElement);
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+        }
+
+        async function sendMessage() {
+            const userMessage = userInput.value.trim();
+            if (userMessage === '') return;
+
+            addMessageToChat('user', userMessage);
+            userInput.value = '';
+
+            conversationHistory.push({ role: 'user', content: userMessage });
+
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'api-key': apiKey
+                    },
+                    body: JSON.stringify({
+                        messages: conversationHistory,
+                        max_tokens: 800,
+                        temperature: 0.7,
+                        top_p: 0.95,
+                        frequency_penalty: 0,
+                        presence_penalty: 0
+                    })
+                });
+
+                const data = await response.json();
+                const assistantMessage = data.choices[0].message.content;
+                
+                addMessageToChat('assistant', assistantMessage);
+                conversationHistory.push({ role: 'assistant', content: assistantMessage });
+
+            } catch (error) {
+                console.error('Erro ao enviar mensagem:', error);
+                addMessageToChat('assistant', 'Desculpe, ocorreu um erro ao processar sua mensagem. Por favor, tente novamente mais tarde.');
+            }
+        }
+
+        sendButton.addEventListener('click', sendMessage);
+        userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Mensagem inicial do assistente
+        addMessageToChat('assistant', 'Olá! Sou o EcoChat, seu assistente para projetos sustentáveis. Que tipo de iniciativa ecológica você gostaria de explorar hoje? Estou aqui para ajudar com ideias criativas e práticas!');
+    </script>
+</body>
+</html>
